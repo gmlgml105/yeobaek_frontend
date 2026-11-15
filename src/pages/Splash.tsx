@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { ScreenShell } from '../components/ScreenShell';
 import { logo } from '../components/icons';
 import { Route, useNav } from '../lib/navigation';
-import { getSessionUser } from '../lib/testAuthService';
+import { getSessionUser } from '../lib/session';
 
 /** Mobile 01 First Launch · 여백 로고 → 3초 후(또는 로고를 누르면) Mobile 01B 로 이동 */
 export function Splash({ route }: { route?: Extract<Route, { name: 'splash' }> }) {

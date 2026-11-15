@@ -8,7 +8,7 @@ import { useAppState } from '../lib/appState';
 import { Route, useNav } from '../lib/navigation';
 import { useAppMenu } from '../lib/useAppMenu';
 import { formatMMSS, useCountdown } from '../lib/useCountdown';
-import { peekCode, sendCode, SentCode } from '../lib/testAuthService';
+import { peekCode, sendCode, SentCode } from '../api/auth';
 import { displayContact } from '../lib/validation';
 
 /**
@@ -26,16 +26,24 @@ export function CheckInbox({ route }: { route: Extract<Route, { name: 'checkInbo
   const cooldown = useCountdown(sent?.resendAvailableAt ?? null);
 
   useEffect(() => {
-    // 새로고침 등으로 코드가 없으면 다시 준비
-    if (!sent) void sendCode('signup', method, contact).then(setSent);
-  }, [sent, method, contact]);
+    // 새로고침 등으로 발송 정보가 없으면 다시 요청
+    if (sent) return;
+    void sendCode('signup', method, contact).then((r) => {
+      if (r.ok) setSent(r.sent);
+      else showToast(r.message ?? '인증코드를 보내지 못했어요.', 'info');
+    });
+  }, [sent, method, contact, showToast]);
 
   const resend = async () => {
     setResending(true);
-    const next = await sendCode('signup', method, contact);
+    const r = await sendCode('signup', method, contact);
     setResending(false);
-    setSent(next);
-    showToast('새 테스트 인증코드를 만들었어요. (실제 발송 없음)', 'success');
+    if (!r.ok) {
+      showToast(r.message ?? '인증코드를 보내지 못했어요.', 'info');
+      return;
+    }
+    setSent(r.sent);
+    showToast(`새 인증코드를 ${isEmail ? '메일' : '문자'}로 보냈어요.`, 'success');
   };
 
   return (

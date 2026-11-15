@@ -6,13 +6,14 @@ import { FormAlert, InlineLink, MethodTabs, PasswordField, PrimaryButton, TextFi
 import { useAppState } from '../lib/appState';
 import { useNav } from '../lib/navigation';
 import { useAppMenu } from '../lib/useAppMenu';
-import { accountExists, sendCode } from '../lib/testAuthService';
+import { sendCode } from '../api/auth';
 import {
   checkPassword,
   formatPhone,
   validateConfirm,
   validateContact,
   validateName,
+  NAME_MAX_LENGTH,
   validatePassword,
 } from '../lib/validation';
 
@@ -27,6 +28,7 @@ export function Signup() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [duplicate, setDuplicate] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const contact = d.method === 'email' ? d.email : d.phone;
   const errors: Record<FieldKey, string | null> = {
@@ -46,18 +48,21 @@ export function Signup() {
     e.preventDefault();
     setSubmitted(true);
     setDuplicate(false);
+    setServerError(null);
     if (Object.values(errors).some(Boolean)) {
       const first = (['name', 'contact', 'password', 'confirm'] as const).find((k) => errors[k]);
       if (first) document.querySelector<HTMLInputElement>(`[data-field="${first}"] input`)?.focus();
       return;
     }
-    if (accountExists(d.method, contact)) {
-      setDuplicate(true);
+    // 백엔드가 중복 계정이면 409(duplicate)로 거절하고, 아니면 인증코드를 보낸다
+    setLoading(true);
+    const result = await sendCode('signup', d.method, contact);
+    setLoading(false);
+    if (!result.ok) {
+      if (result.reason === 'duplicate') setDuplicate(true);
+      else setServerError(result.message);
       return;
     }
-    setLoading(true);
-    await sendCode('signup', d.method, contact);
-    setLoading(false);
     push({ name: 'checkInbox', method: d.method, contact });
   };
 
@@ -76,6 +81,7 @@ export function Signup() {
               name="name"
               autoComplete="name"
               placeholder="김서연"
+              maxLength={NAME_MAX_LENGTH}
               value={d.name}
               onChange={(e) => setSignupDraft({ name: e.target.value })}
               onBlur={blur('name')}
@@ -205,7 +211,9 @@ export function Signup() {
           </FormAlert>
         )}
 
-        <PrimaryButton loading={loading} loadingText="인증코드 준비 중…">
+        {serverError && <FormAlert>{serverError}</FormAlert>}
+
+        <PrimaryButton loading={loading} loadingText="인증코드 보내는 중…">
           동의하고 계정 만들기
         </PrimaryButton>
       </SafeForm>

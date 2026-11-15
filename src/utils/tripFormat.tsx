@@ -1,7 +1,7 @@
 /** Mobile 11~22에서 여행 정보를 같은 형식으로 보여 주기 위한 도우미 */
 import type { Destination } from '../lib/destinations';
 import { nightsDays } from '../lib/dates';
-import { getSessionUser } from '../lib/testAuthService';
+import { getSessionUser } from '../lib/session';
 import { peopleCount, Trip } from '../lib/tripStore';
 
 /** "2026.11.09 – 11.13" */

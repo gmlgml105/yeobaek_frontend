@@ -8,22 +8,15 @@ import { useAppState } from '../lib/appState';
 import { Route, useNav } from '../lib/navigation';
 import { useAppMenu } from '../lib/useAppMenu';
 import { formatMMSS, useCountdown } from '../lib/useCountdown';
-import {
-  CODE_LENGTH,
-  peekCode,
-  registerAccount,
-  sendCode,
-  SentCode,
-  setSession,
-  verifyCode,
-} from '../lib/testAuthService';
-import { displayContact } from '../lib/validation';
+import { CODE_LENGTH, login, peekCode, sendCode, SentCode, verifyCode } from '../api/auth';
+import { join } from '../api/member';
+import { displayContact, normalizeContact } from '../lib/validation';
 
 type Status = 'idle' | 'checking' | 'error' | 'success';
 
 /**
  * Mobile 06 Verify Code · 인증코드
- *  - purpose "signup": 이메일/휴대폰 가입 인증 → 계정 생성 후 Mobile 08 Home
+ *  - purpose "signup": 이메일/휴대폰 가입 인증 → POST /api/member/join → 자동 로그인 → Mobile 08 Home
  *  - purpose "reset" : 비밀번호 재설정 인증 → Mobile 07 New Password
  */
 export function VerifyCode({ route }: { route: Extract<Route, { name: 'verify' }> }) {
@@ -45,8 +38,12 @@ export function VerifyCode({ route }: { route: Extract<Route, { name: 'verify' }
   const expired = Boolean(sent) && remaining <= 0;
 
   useEffect(() => {
-    if (!sent) void sendCode(purpose, method, contact).then(setSent);
-  }, [sent, purpose, method, contact]);
+    if (sent) return;
+    void sendCode(purpose, method, contact).then((r) => {
+      if (r.ok) setSent(r.sent);
+      else showToast(r.message ?? '인증코드를 보내지 못했어요.', 'info');
+    });
+  }, [sent, purpose, method, contact, showToast]);
 
   useEffect(() => {
     if (expired && status !== 'success') {
@@ -79,6 +76,8 @@ export function VerifyCode({ route }: { route: Extract<Route, { name: 'verify' }
         setMessage(`인증코드가 일치하지 않아요. (남은 시도 ${result.attemptsLeft}회)`);
       } else if (result.reason === 'expired' || result.reason === 'no_code') {
         setMessage('유효시간이 지났어요. 인증코드를 다시 받아 주세요.');
+      } else if (result.reason === 'network' || result.reason === 'error') {
+        setMessage(result.message ?? '인증코드를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.');
       } else {
         setLocked(true);
         setMessage('입력 횟수를 초과했어요. 인증코드를 다시 받아 주세요.');
@@ -94,20 +93,30 @@ export function VerifyCode({ route }: { route: Extract<Route, { name: 'verify' }
       return;
     }
 
-    const created = await registerAccount({
-      name: signupDraft.name,
-      method,
-      contact,
-      password: signupDraft.password,
-      marketing: signupDraft.agreeMarketing,
+    // 인증 완료 → 백엔드에 회원 저장
+    const normalized = normalizeContact(method, contact);
+    const joined = await join({
+      memberName: signupDraft.name.trim(),
+      memberPassword: signupDraft.password,
+      ...(isEmail ? { memberEmail: normalized } : { memberPhone: normalized }),
     });
-    if (!created.ok) {
+    if (!joined.ok) {
       setStatus('error');
-      setMessage('이미 가입된 계정이에요. 로그인 화면에서 로그인해 주세요.');
+      setMessage(
+        joined.reason === 'duplicate'
+          ? '이미 가입된 계정이에요. 로그인 화면에서 로그인해 주세요.'
+          : joined.message ?? '회원가입을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.',
+      );
       return;
     }
-    setSession(created.user);
+
+    // 가입한 정보로 바로 로그인 (JWT 를 localStorage 에 저장)
+    const signedIn = await login(method, contact, signupDraft.password);
     clearSignupDraft();
+    if (!signedIn.ok) {
+      reset({ name: 'login', method, contact, notice: '가입이 완료되었어요. 로그인해 주세요.' });
+      return;
+    }
     window.setTimeout(() => reset({ name: 'home', welcome: 'signup' }), 800);
   };
 
@@ -115,12 +124,16 @@ export function VerifyCode({ route }: { route: Extract<Route, { name: 'verify' }
     setResending(true);
     const next = await sendCode(purpose, method, contact);
     setResending(false);
-    setSent(next);
+    if (!next.ok) {
+      showToast(next.message ?? '인증코드를 보내지 못했어요.', 'info');
+      return;
+    }
+    setSent(next.sent);
     setCode('');
     setLocked(false);
     setStatus('idle');
     setMessage(null);
-    showToast('새 테스트 인증코드를 만들었어요. (실제 발송 없음)', 'success');
+    showToast(`새 인증코드를 ${isEmail ? '메일' : '문자'}로 보냈어요.`, 'success');
   };
 
   const codeStatus = status === 'success' ? 'success' : status === 'error' ? 'error' : 'default';

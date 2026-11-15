@@ -4,7 +4,7 @@ import { ScreenShell } from '../components/ScreenShell';
 import { GuidanceCard } from '../components/AuthParts';
 import { FormAlert, InlineLink, MethodTabs, PrimaryButton, TextField } from '../components/FormControls';
 import { shieldGray } from '../components/icons';
-import { accountExists, sendCode } from '../lib/testAuthService';
+import { sendCode } from '../api/auth';
 import { useNav } from '../lib/navigation';
 import { useAppMenu } from '../lib/useAppMenu';
 import { ContactMethod, formatPhone, validateContact } from '../lib/validation';
@@ -19,6 +19,7 @@ export function FindPassword() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const contact = method === 'email' ? email : phone;
   const error = submitted ? validateContact(method, contact) : null;
@@ -28,14 +29,17 @@ export function FindPassword() {
     e.preventDefault();
     setSubmitted(true);
     setNotFound(false);
+    setServerError(null);
     if (validateContact(method, contact)) return;
-    if (!accountExists(method, contact)) {
-      setNotFound(true);
+    // 백엔드가 가입되지 않은 계정이면 404(not_found)로 거절하고, 아니면 인증코드를 보낸다
+    setLoading(true);
+    const result = await sendCode('reset', method, contact);
+    setLoading(false);
+    if (!result.ok) {
+      if (result.reason === 'not_found') setNotFound(true);
+      else setServerError(result.message);
       return;
     }
-    setLoading(true);
-    await sendCode('reset', method, contact);
-    setLoading(false);
     push({ name: 'verify', purpose: 'reset', method, contact });
   };
 
@@ -112,6 +116,7 @@ export function FindPassword() {
             </button>
           </FormAlert>
         )}
+        {serverError && <FormAlert>{serverError}</FormAlert>}
 
         <PrimaryButton loading={loading} loadingText="인증코드 준비 중…">
           인증코드 보내기

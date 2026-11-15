@@ -6,7 +6,7 @@ import suitcaseImage from '../assets/home-suitcase.jpg';
 import { useAppState } from '../lib/appState';
 import { formatMDW, nightsDays } from '../lib/dates';
 import { useNav } from '../lib/navigation';
-import { getSessionUser } from '../lib/testAuthService';
+import { getSessionUser } from '../lib/session';
 import { peopleCount, Trip, useTrips } from '../lib/tripStore';
 
 /** Figma 홈의 "동행 미리보기" 예시 — 아직 등록한 동행이 없을 때 보여 주는 샘플 */

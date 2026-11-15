@@ -6,13 +6,13 @@ import { checkWhite, palette, shieldCheck, sliders } from '../components/icons';
 import { ACCENT_PALETTES, isCustomAccent, paletteOf, swatchGradient } from '../lib/accent';
 import { useAppState } from '../lib/appState';
 import { Route, useNav } from '../lib/navigation';
-import { resetTestData, setSession } from '../lib/testAuthService';
+import { logout } from '../api/auth';
 import { KEYWORD_OPTIONS, TASTE_OPTIONS, useWorld } from '../lib/worldStore';
 
 /** Mobile 22 (두 번째 프레임) · 세부 설정 — 여행 취향 · 공개 범위 · 대화 보관 */
 export function Settings({ route }: { route: Extract<Route, { name: 'settings' }> }) {
   const { back, canGoBack, reset } = useNav();
-  const { showToast, clearSignupDraft } = useAppState();
+  const { showToast } = useAppState();
   const { profile, updateProfile } = useWorld();
   const privacyRef = useRef<HTMLElement>(null);
   const colorRef = useRef<HTMLElement>(null);
@@ -150,33 +150,13 @@ export function Settings({ route }: { route: Extract<Route, { name: 'settings' }
         <button
           type="button"
           className="btn-secondary"
-          onClick={() => {
-            setSession(null);
+          onClick={async () => {
+            // 백엔드 토큰 쿠키 삭제 + localStorage(token, yeobaek.member) 정리
+            await logout();
             reset({ name: 'onboarding' });
           }}
         >
           로그아웃
-        </button>
-        <button
-          type="button"
-          className="btn-text btn-text-danger"
-          onClick={() => {
-            resetTestData();
-            clearSignupDraft();
-            try {
-              Object.keys(window.localStorage)
-                .filter((k) => k.startsWith('yeobaek.'))
-                .forEach((k) => window.localStorage.removeItem(k));
-              window.sessionStorage.removeItem('yeobaek.navStack');
-            } catch {
-              /* noop */
-            }
-            showToast('테스트 데이터를 모두 지웠어요.');
-            reset({ name: 'onboarding' });
-            window.location.reload();
-          }}
-        >
-          테스트 데이터 모두 초기화
         </button>
       </section>
     </ScreenShell>

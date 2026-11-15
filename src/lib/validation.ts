@@ -72,10 +72,14 @@ export function validateConfirm(pw: string, confirm: string): string | null {
   return null;
 }
 
+/** tbl_member.member_name varchar(10) 과 맞춘다 */
+export const NAME_MAX_LENGTH = 10;
+
 export function validateName(name: string): string | null {
   const v = name.trim();
   if (!v) return '이름을 입력해 주세요.';
-  if (v.length > 20) return '이름은 20자 이내로 입력해 주세요.';
+  // DB tbl_member.member_name varchar(10)
+  if (v.length > NAME_MAX_LENGTH) return `이름은 ${NAME_MAX_LENGTH}자 이내로 입력해 주세요.`;
   return null;
 }
 

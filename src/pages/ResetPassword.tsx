@@ -6,7 +6,7 @@ import { FormAlert, PasswordField, PrimaryButton } from '../components/FormContr
 import { shieldSlate } from '../components/icons';
 import { Route, useNav } from '../lib/navigation';
 import { useAppMenu } from '../lib/useAppMenu';
-import { resetPassword } from '../lib/testAuthService';
+import { resetPassword } from '../api/auth';
 import { checkPassword, validateConfirm, validatePassword } from '../lib/validation';
 
 /** Mobile 07 New Password · 재설정 완료 */
@@ -20,8 +20,7 @@ export function ResetPassword({ route }: { route: Extract<Route, { name: 'newPas
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [savedName, setSavedName] = useState<string | null>(null);
-  const done = savedName !== null;
+  const [done, setDone] = useState(false);
 
   const pwError = validatePassword(password);
   const confirmError = validateConfirm(password, confirm);
@@ -44,11 +43,13 @@ export function ResetPassword({ route }: { route: Extract<Route, { name: 'newPas
       setServerError(
         result.reason === 'same_as_before'
           ? '이전에 사용한 비밀번호예요. 다른 비밀번호를 입력해 주세요.'
-          : '계정을 찾지 못했어요. 처음부터 다시 시도해 주세요.',
+          : result.reason === 'not_found' || result.reason === 'not_verified'
+            ? '계정을 확인하지 못했어요. 처음부터 다시 시도해 주세요.'
+            : result.message ?? '비밀번호를 변경하지 못했어요. 잠시 후 다시 시도해 주세요.',
       );
       return;
     }
-    setSavedName(result.user.name);
+    setDone(true);
   };
 
   return (
@@ -103,7 +104,7 @@ export function ResetPassword({ route }: { route: Extract<Route, { name: 'newPas
 
         {done && (
           <GuidanceCard icon={shieldSlate} title="비밀번호가 변경되었어요" tone="success">
-            {savedName}님의 계정 {method === 'email' ? '이메일' : '휴대폰'} 인증과 새 비밀번호 저장이 완료되었어요. 새
+            계정 {method === 'email' ? '이메일' : '휴대폰'} 인증과 새 비밀번호 저장이 완료되었어요. 새
             비밀번호로 로그인해 주세요.
           </GuidanceCard>
         )}

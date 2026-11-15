@@ -3,7 +3,7 @@ import { FormEvent, useState } from 'react';
 import { ScreenShell } from '../components/ScreenShell';
 import { SocialLogin } from '../components/AuthParts';
 import { FormAlert, InlineLink, MethodTabs, PasswordField, PrimaryButton, TextField } from '../components/FormControls';
-import { login } from '../lib/testAuthService';
+import { login } from '../api/auth';
 import { Route, useNav } from '../lib/navigation';
 import { useAppMenu } from '../lib/useAppMenu';
 import { ContactMethod, formatPhone, validateContact } from '../lib/validation';
@@ -35,6 +35,10 @@ export function Login({ route }: { route: Extract<Route, { name: 'login' }> }) {
     setLoading(false);
     if (result.ok) {
       reset({ name: 'home', welcome: 'login' });
+      return;
+    }
+    if (result.reason !== 'invalid') {
+      setFailure(result.message ?? '로그인하지 못했어요. 잠시 후 다시 시도해 주세요.');
       return;
     }
     const next = failCount + 1;

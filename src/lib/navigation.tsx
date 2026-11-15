@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ContactMethod } from './validation';
-import type { CodePurpose } from './testAuthService';
+import type { CodePurpose } from '../api/auth';
 
 /**
  * Figma 프레임 ↔ 화면(route) 대응
