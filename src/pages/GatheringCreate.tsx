@@ -9,7 +9,6 @@ import { tripDates, useTrips } from '../lib/tripStore';
 import { GatheringKind, useWorld } from '../lib/worldStore';
 
 const MAX_PHOTOS = 10;
-const DRAFT_KEY = 'yeobaek.gatheringDraft';
 
 interface Form {
   photos: string[];
@@ -37,13 +36,11 @@ const EMPTY: Form = {
   end: '',
 };
 
+/** 작성 중인 모임 — 화면을 나갔다 와도 남도록 메모리에만 보관 (새로고침하면 사라짐) */
+let savedDraft: Form = EMPTY;
+
 function readDraft(): Form {
-  try {
-    const raw = window.localStorage.getItem(DRAFT_KEY);
-    return raw ? { ...EMPTY, ...(JSON.parse(raw) as Partial<Form>) } : EMPTY;
-  } catch {
-    return EMPTY;
-  }
+  return savedDraft;
 }
 
 function formatTime(raw: string): string {
@@ -52,7 +49,7 @@ function formatTime(raw: string): string {
 }
 const validTime = (t: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 
-/** 사진을 작게 줄여 data URL로 (localStorage 용량 보호) */
+/** 사진을 작게 줄여 data URL로 (메모리 사용량 보호) */
 function shrink(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -87,16 +84,7 @@ export function GatheringCreate() {
 
   // 화면을 나갔다 와도 입력값이 남도록 임시 저장
   useEffect(() => {
-    try {
-      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
-    } catch {
-      /* 용량 초과 등: 사진 없이 저장 */
-      try {
-        window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...form, photos: [] }));
-      } catch {
-        /* noop */
-      }
-    }
+    savedDraft = form;
   }, [form]);
 
   const trip = trips[0];
@@ -155,11 +143,7 @@ export function GatheringCreate() {
       photo: form.photos[0],
     });
     setForm(EMPTY);
-    try {
-      window.localStorage.removeItem(DRAFT_KEY);
-    } catch {
-      /* noop */
-    }
+    savedDraft = EMPTY;
     showToast('모임을 만들었어요. 이 브라우저에서만 보이는 데모 모임이에요.', 'success');
     replace({ name: 'gathering', id: g.id });
   };

@@ -70,23 +70,22 @@ export function GuidanceCard({
 // 테스트 모드 안내 — 실제 발송된 것처럼 보이지 않도록 명확하게 구분
 // ---------------------------------------------------------------------------
 
+/**
+ * 개발용 인증코드 표시.
+ * 백엔드 verification.expose-code=true 일 때만 응답에 testCode 가 오고, 그때만 보인다.
+ * (문자 발신번호가 없어 실제 발송이 안 되는 동안 테스트할 수 있게 남겨 둔 것)
+ */
 export function TestModeNotice({ code, channel }: { code: string | null; channel: 'email' | 'phone' }) {
+  if (!code) return null;
   return (
     <aside className="test-notice" aria-label="테스트 모드 안내">
       <span className="test-badge">테스트 모드</span>
       <p>
-        서버와 {channel === 'email' ? '메일' : '문자'} 발송이 연결되지 않아 실제로 전송되지 않았어요.
-        {code ? (
-          <>
-            {' '}
-            아래 테스트 인증코드를 사용해 주세요.
-            <strong className="test-code" aria-label={`테스트 인증코드 ${code.split('').join(' ')}`}>
-              {code}
-            </strong>
-          </>
-        ) : (
-          ' 인증코드를 다시 받아 주세요.'
-        )}
+        개발 서버 설정으로 인증코드를 화면에도 보여 주고 있어요. {channel === 'email' ? '메일' : '문자'}이
+        오지 않으면 아래 코드를 사용해 주세요.
+        <strong className="test-code" aria-label={`테스트 인증코드 ${code.split('').join(' ')}`}>
+          {code}
+        </strong>
       </p>
     </aside>
   );

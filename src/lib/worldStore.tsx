@@ -1,12 +1,12 @@
 /**
  * Mobile 13~22 데이터 (프론트엔드 데모)
  * - 프로필·취향·공개 설정, 근처 추천 취향, 인연 모임·참여·대화
- * - localStorage `yeobaek.world.<계정>` 하나에 저장 — 새로고침 후에도 유지
+ * - 메모리에만 보관 (새로고침하면 사라짐). localStorage 저장은 제거했다.
  *
  * ⚠️ 서버가 없어서 다른 여행자는 실제 사람이 아닌 Figma에 그려진 예시 참여자입니다.
  *    모임 참여·대화도 이 브라우저 안에서만 기록되고, 다른 사람에게 전달되지 않습니다.
  */
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { addDays, ISODate } from './dates';
 import { DEFAULT_PREFS, NearbyPrefs } from './nearby';
 import { newId } from './tripStore';
@@ -255,18 +255,6 @@ function defaultWorld(): WorldData {
   };
 }
 
-function read(key: string): WorldData {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return defaultWorld();
-    const parsed = JSON.parse(raw) as Partial<WorldData>;
-    const base = defaultWorld();
-    return { ...base, ...parsed, profile: { ...base.profile, ...parsed.profile, privacy: { ...base.profile.privacy, ...parsed.profile?.privacy } } };
-  } catch {
-    return defaultWorld();
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
@@ -296,7 +284,6 @@ interface WorldApi extends WorldData {
 const WorldContext = createContext<WorldApi | null>(null);
 
 export function WorldProvider({
-  owner,
   baseDate,
   children,
 }: {
@@ -305,16 +292,8 @@ export function WorldProvider({
   baseDate: ISODate | null;
   children: ReactNode;
 }) {
-  const key = `yeobaek.world.${owner ?? 'guest'}`;
-  const [data, setData] = useState<WorldData>(() => read(key));
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(data));
-    } catch {
-      /* 저장소를 쓸 수 없으면 메모리에서만 유지 */
-    }
-  }, [key, data]);
+  // owner 가 바뀌면 App 에서 key={owner} 로 새로 마운트되어 빈 데이터로 시작한다
+  const [data, setData] = useState<WorldData>(defaultWorld);
 
   const gatherings = useMemo(
     () => [...data.createdGatherings, ...sampleGatherings(baseDate)],

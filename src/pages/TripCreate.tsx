@@ -22,7 +22,7 @@ import {
   RELATIONS,
 } from '../lib/destinations';
 import { Route, useNav } from '../lib/navigation';
-import { getSessionUser } from '../lib/testAuthService';
+import { getSessionUser } from '../lib/session';
 import { activitiesOutsideRange, Companion, emptyTrip, newId, useTrips } from '../lib/tripStore';
 
 const MAX_PEOPLE = 10;

@@ -1,8 +1,9 @@
 import { ReactNode, useEffect } from 'react';
 import { ToastHost } from './components/AuthParts';
 import { AppStateProvider } from './lib/appState';
+import { routeFromLocation } from './lib/entryRoute';
 import { NavigationProvider, useNav } from './lib/navigation';
-import { getSessionUser } from './lib/testAuthService';
+import { getSessionUser } from './lib/session';
 import { TripProvider, useTrips } from './lib/tripStore';
 import { WorldProvider, useWorld } from './lib/worldStore';
 import { applyTheme, deviceAccent, rememberDeviceAccent } from './lib/themeRuntime';
@@ -130,10 +131,16 @@ function AccentTheme({ enabled }: { enabled: boolean }) {
   return null;
 }
 
+// 백엔드가 /member/join, /member/login 으로 보낸 경우 그 화면부터 시작
+const entryRoute = routeFromLocation();
+
 export default function App() {
   return (
     <AppStateProvider>
-      <NavigationProvider initial={{ name: 'splash' }} restore={Boolean(getSessionUser())}>
+      <NavigationProvider
+        initial={entryRoute ?? { name: 'splash' }}
+        restore={!entryRoute && Boolean(getSessionUser())}
+      >
         <SessionScope>
           <div className="app-stage">
             <CurrentScreen />

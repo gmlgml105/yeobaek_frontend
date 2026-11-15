@@ -1,10 +1,9 @@
 /**
- * 여행 데이터 저장소 (프론트엔드 데모)
- * - 저장된 여행: localStorage `yeobaek.trips.<계정>` — 새로고침 후에도 유지
- * - 작성 중인 여행(초안): localStorage `yeobaek.tripDraft.<계정>` — 화면을 오가거나 새로고침해도 유지
- * 실제 백엔드가 생기면 load/save 함수만 API 호출로 바꾸면 됩니다.
+ * 여행 데이터 저장소
+ * - 저장된 여행 · 작성 중인 여행(초안) 모두 메모리에만 보관 (새로고침하면 사라짐)
+ * - localStorage 저장은 제거했다. 백엔드 여행 API 가 생기면 이 Provider 에서 불러오고 저장하면 된다.
  */
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { dateRange, ISODate } from './dates';
 import type { Destination, Region } from './destinations';
 
@@ -101,24 +100,6 @@ export function activitiesOutsideRange(trip: Trip, start: ISODate, end: ISODate)
     .reduce((n, [, plan]) => n + plan.activities.length, 0);
 }
 
-function readJSON<T>(key: string, fallback: T): T {
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJSON(key: string, value: unknown) {
-  try {
-    if (value === null) window.localStorage.removeItem(key);
-    else window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* 저장소를 쓸 수 없는 환경: 메모리에서만 유지 */
-  }
-}
-
 interface TripApi {
   trips: Trip[];
   draft: Trip | null;
@@ -139,15 +120,10 @@ interface TripApi {
 
 const TripContext = createContext<TripApi | null>(null);
 
-export function TripProvider({ owner, children }: { owner: string | null; children: ReactNode }) {
-  const tripsKey = `yeobaek.trips.${owner ?? 'guest'}`;
-  const draftKey = `yeobaek.tripDraft.${owner ?? 'guest'}`;
-  const [trips, setTrips] = useState<Trip[]>(() => readJSON<Trip[]>(tripsKey, []));
-  const [draft, setDraft] = useState<Trip | null>(() => readJSON<Trip | null>(draftKey, null));
-
-  // 계정이 바뀌면 App에서 key={owner}로 이 Provider를 새로 마운트해 그 계정의 데이터를 읽는다.
-  useEffect(() => writeJSON(tripsKey, trips), [tripsKey, trips]);
-  useEffect(() => writeJSON(draftKey, draft), [draftKey, draft]);
+// owner 는 App 에서 key={owner} 로 계정이 바뀔 때 Provider 를 새로 마운트하는 데 쓴다 (계정별 데이터 분리)
+export function TripProvider({ children }: { owner: string | null; children: ReactNode }) {
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [draft, setDraft] = useState<Trip | null>(null);
 
   const startNewTrip = useCallback(
     (opts?: { fresh?: boolean }) => {
