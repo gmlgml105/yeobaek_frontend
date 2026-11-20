@@ -4,9 +4,10 @@ import { AppStateProvider } from './lib/appState';
 import { routeFromLocation } from './lib/entryRoute';
 import { NavigationProvider, useNav } from './lib/navigation';
 import { getSessionUser } from './lib/session';
+import { useServerProfile } from './lib/useServerProfile';
 import { TripProvider, useTrips } from './lib/tripStore';
 import { WorldProvider, useWorld } from './lib/worldStore';
-import { applyTheme, deviceAccent, rememberDeviceAccent } from './lib/themeRuntime';
+import { applyTheme } from './lib/themeRuntime';
 import { ChatArchive } from './pages/ChatArchive';
 import { GatheringChat } from './pages/GatheringChat';
 import { MapPage } from './pages/Map';
@@ -28,6 +29,7 @@ import { FindPassword } from './pages/FindPassword';
 import { Home } from './pages/Home';
 import { ScheduleAdd } from './pages/ScheduleAdd';
 import { Login } from './pages/Login';
+import { OAuthCallback } from './pages/OAuthCallback';
 import { ResetPassword } from './pages/ResetPassword';
 import { TripCreate } from './pages/TripCreate';
 import { Onboarding } from './pages/Onboarding';
@@ -45,6 +47,8 @@ function CurrentScreen() {
       return <Signup />;
     case 'login':
       return <Login key={`${route.method}-${route.contact}`} route={route} />;
+    case 'oauthCallback':
+      return <OAuthCallback />;
     case 'forgot':
       return <FindPassword />;
     case 'checkInbox':
@@ -113,20 +117,26 @@ function WorldScope({ owner, children }: { owner: string | null; children: React
   return (
     <WorldProvider key={owner ?? 'guest'} owner={owner} baseDate={first?.startDate ?? null}>
       <AccentTheme enabled={Boolean(owner)} />
+      <ServerProfileLoader enabled={Boolean(owner)} />
       {children}
     </WorldProvider>
   );
 }
 
-/** 로그인한 사용자의 컬러 조합을 앱 전체(글자·버튼·배경·아이콘)에 적용. 로그아웃하면 기본색으로 */
+/** 로그인한 상태로 앱을 열면 서버에 저장된 프로필(닉네임 · 취향 · 공개 설정 · 컬러)을 한 번 받아 온다 */
+function ServerProfileLoader({ enabled }: { enabled: boolean }) {
+  useServerProfile(enabled);
+  return null;
+}
+
+/** 로그인한 사용자의 컬러 조합(서버 thema_color)을 앱 전체(글자·버튼·배경·아이콘)에 적용. 로그아웃하면 기본 테마로 */
 function AccentTheme({ enabled }: { enabled: boolean }) {
   const { profile } = useWorld();
-  // 로그인 전 화면(로그인 · 인증 메일 · 문자 등)은 이 기기에서 마지막으로 고른 조합을 따른다
-  const accent = enabled ? profile.accent : deviceAccent();
+  // 로그아웃 상태(로그인 · 가입 · 인증 화면)는 항상 기본 테마
+  const accent = enabled ? profile.accent : null;
   useEffect(() => {
-    if (enabled) rememberDeviceAccent(accent);
     applyTheme(accent);
-  }, [accent, enabled]);
+  }, [accent]);
   useEffect(() => () => applyTheme(null), []);
   return null;
 }

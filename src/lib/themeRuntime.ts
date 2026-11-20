@@ -195,25 +195,6 @@ function ensureObserver() {
 }
 
 const VAR_NAMES = Object.keys(accentVars('#000000') ?? {});
-const DEVICE_KEY = 'yeobaek.accent.device';
-
-/** 로그아웃 상태 화면(로그인 · 인증 메일 등)에도 이 기기에서 마지막으로 고른 조합을 쓰도록 기억 */
-export function rememberDeviceAccent(id: string | undefined) {
-  try {
-    if (id) window.localStorage.setItem(DEVICE_KEY, id);
-  } catch {
-    /* 저장소를 쓸 수 없으면 기억하지 않음 */
-  }
-}
-
-export function deviceAccent(): string | undefined {
-  try {
-    return window.localStorage.getItem(DEVICE_KEY) ?? undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export function applyTheme(accentId: string | undefined | null) {
   const root = document.documentElement;
   const vars = accentId ? accentVars(accentId) : null;

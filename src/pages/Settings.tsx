@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { saveSettings, SettingsPatch } from '../api/profile';
 import { ScreenShell } from '../components/ScreenShell';
 import { BellButton, BottomNav } from '../components/TripParts';
 import { ChoiceChips, Switch } from '../components/WorldParts';
@@ -7,7 +8,7 @@ import { ACCENT_PALETTES, isCustomAccent, paletteOf, swatchGradient } from '../l
 import { useAppState } from '../lib/appState';
 import { Route, useNav } from '../lib/navigation';
 import { logout } from '../api/auth';
-import { KEYWORD_OPTIONS, TASTE_OPTIONS, useWorld } from '../lib/worldStore';
+import { KEYWORD_OPTIONS, Profile, TASTE_OPTIONS, useWorld } from '../lib/worldStore';
 
 /** Mobile 22 (두 번째 프레임) · 세부 설정 — 여행 취향 · 공개 범위 · 대화 보관 */
 export function Settings({ route }: { route: Extract<Route, { name: 'settings' }> }) {
@@ -18,9 +19,38 @@ export function Settings({ route }: { route: Extract<Route, { name: 'settings' }
   const colorRef = useRef<HTMLElement>(null);
   const current = paletteOf(profile.accent);
   const custom = profile.accent && isCustomAccent(profile.accent) ? paletteOf(profile.accent) : null;
-  const pick = (id: string, label: string) => {
+  /**
+   * 화면에 먼저 반영하고 서버에 저장한다 (PATCH /api/profile/settings).
+   * 저장에 실패하면 이전 값으로 되돌리고 알려 준다.
+   */
+  const persist = async (patch: SettingsPatch, next: Partial<Profile>, previous: Partial<Profile>) => {
+    updateProfile(next);
+    const result = await saveSettings(patch);
+    if (!result.ok) {
+      updateProfile(previous);
+      showToast(result.message ?? '설정을 저장하지 못했어요. 다시 시도해 주세요.', 'error');
+      return false;
+    }
+    return true;
+  };
+
+  // 직접 고르는 색은 끌면서 값이 계속 바뀌므로 멈춘 뒤 0.4초 후에 한 번만 저장
+  const colorTimer = useRef<number | undefined>(undefined);
+  const savedAccent = useRef(profile.accent);
+  useEffect(() => () => window.clearTimeout(colorTimer.current), []);
+
+  const pick = (id: string, label: string, debounce = false) => {
     updateProfile({ accent: id });
-    showToast(`프로필 액센트를 '${label}' 조합으로 바꿨어요.`);
+    window.clearTimeout(colorTimer.current);
+    const commit = async () => {
+      const previous = savedAccent.current;
+      if (await persist({ themeColor: id }, { accent: id }, { accent: previous })) {
+        savedAccent.current = id;
+        showToast(`프로필 액센트를 '${label}' 조합으로 바꿨어요.`);
+      }
+    };
+    if (debounce) colorTimer.current = window.setTimeout(() => void commit(), 400);
+    else void commit();
   };
 
   useEffect(() => {
@@ -29,7 +59,21 @@ export function Settings({ route }: { route: Extract<Route, { name: 'settings' }
   }, [route.section]);
 
   const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
-  const setPrivacy = (patch: Partial<typeof profile.privacy>) => updateProfile({ privacy: { ...profile.privacy, ...patch } });
+  const setPrivacy = (patch: Partial<typeof profile.privacy>) => {
+    const server: SettingsPatch = {};
+    if (patch.nickname !== undefined) server.aliasPublic = patch.nickname;
+    if (patch.contact !== undefined) server.phonePublic = patch.contact;
+    if (patch.autosave !== undefined) server.noteAutoSave = patch.autosave;
+    void persist(server, { privacy: { ...profile.privacy, ...patch } }, { privacy: profile.privacy });
+  };
+  const toggleTaste = (t: string) => {
+    const tastes = toggle(profile.tastes, t);
+    void persist({ preferences: tastes }, { tastes }, { tastes: profile.tastes });
+  };
+  const toggleKeyword = (t: string) => {
+    const keywords = toggle(profile.keywords, t);
+    void persist({ vibes: keywords }, { keywords }, { keywords: profile.keywords });
+  };
 
   return (
     <ScreenShell
@@ -52,14 +96,14 @@ export function Settings({ route }: { route: Extract<Route, { name: 'settings' }
             options={TASTE_OPTIONS}
             selected={profile.tastes}
             variant="soft"
-            onToggle={(t) => updateProfile({ tastes: toggle(profile.tastes, t) })}
+            onToggle={toggleTaste}
           />
           <ChoiceChips
             label="여행 키워드 (여러 개 선택)"
             options={KEYWORD_OPTIONS}
             selected={profile.keywords}
             variant="soft"
-            onToggle={(t) => updateProfile({ keywords: toggle(profile.keywords, t) })}
+            onToggle={toggleKeyword}
           />
         </div>
         <p className="form-help">고른 취향은 바로 저장되고 프로필에 보여요. 선택 {profile.tastes.length + profile.keywords.length}개</p>
@@ -137,7 +181,7 @@ export function Settings({ route }: { route: Extract<Route, { name: 'settings' }
                 type="color"
                 className="sr-only"
                 value={custom ? custom.id : '#84afff'}
-                onChange={(e) => pick(e.target.value.toLowerCase(), `직접 고른 색 ${e.target.value}`)}
+                onChange={(e) => pick(e.target.value.toLowerCase(), `직접 고른 색 ${e.target.value}`, true)}
               />
             </label>
           </div>

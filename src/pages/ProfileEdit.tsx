@@ -6,6 +6,8 @@ import { camera } from '../components/icons';
 import { useAppState } from '../lib/appState';
 import { useNav } from '../lib/navigation';
 import { useWorld } from '../lib/worldStore';
+import { deleteAvatar, ProfileResult, saveProfileInfo, toBlob, toLocalProfile, uploadAvatar } from '../api/profile';
+import puppyAvatar from '../assets/avatar-puppy.png';
 
 /** 프로필 사진을 정사각형 200px로 줄여 data URL로 */
 function toAvatar(file: File): Promise<string> {
@@ -41,6 +43,7 @@ export function ProfileEdit() {
   const [picker, setPicker] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const nickError = !nickname.trim()
@@ -51,10 +54,39 @@ export function ProfileEdit() {
   const dirty = nickname !== profile.nickname || intro !== profile.intro || avatar !== profile.avatar;
   const leave = () => (canGoBack ? back() : reset({ name: 'profile' }));
 
-  const save = () => {
+  /**
+   * 서버에 저장한 뒤 화면 값을 서버 응답으로 맞춘다.
+   *  - 사진이 바뀌었으면 먼저 올리거나 지운다 (예시 캐릭터도 이미지 파일로 올린다)
+   *  - 닉네임 · 소개는 PUT /api/profile
+   */
+  const save = async () => {
     setSubmitted(true);
-    if (nickError) return;
-    updateProfile({ nickname: nickname.trim(), intro: intro.trim(), avatar });
+    if (nickError || saving) return;
+    setSaving(true);
+
+    let result: ProfileResult | null = null;
+    if (avatar !== profile.avatar) {
+      try {
+        if (avatar === 'initial') result = await deleteAvatar();
+        else if (avatar === 'puppy') result = await uploadAvatar(await toBlob(puppyAvatar), 'avatar-puppy.png');
+        else result = await uploadAvatar(await toBlob(avatar), 'avatar.jpg');
+      } catch {
+        result = { ok: false, reason: 'error', message: '사진을 준비하지 못했어요.' };
+      }
+      if (!result.ok) {
+        setSaving(false);
+        showToast(result.message ?? '사진을 저장하지 못했어요.', 'error');
+        return;
+      }
+    }
+
+    result = await saveProfileInfo(nickname.trim(), intro.trim());
+    setSaving(false);
+    if (!result.ok) {
+      showToast(result.message ?? '프로필을 저장하지 못했어요.', 'error');
+      return;
+    }
+    updateProfile(toLocalProfile(result.profile));
     showToast('프로필을 저장했어요.', 'success');
     leave();
   };
@@ -107,15 +139,15 @@ export function ProfileEdit() {
         <span className="form-help">{intro.length}/80</span>
       </label>
 
-      <button type="button" className="btn-primary" onClick={save}>
-        저장하기
+      <button type="button" className="btn-primary" onClick={() => void save()} disabled={saving}>
+        {saving ? '저장 중…' : '저장하기'}
       </button>
 
       {picker && (
         <BottomSheet title="프로필 사진" placement="center" onClose={() => setPicker(false)}>
           <div className="sheet-actions sheet-actions-stack photo-choices">
             <button type="button" className="btn-secondary" onClick={() => fileRef.current?.click()}>
-              사진 올리기 (이 기기에만 저장)
+              사진 올리기
             </button>
             <button
               type="button"
