@@ -8,6 +8,7 @@ import { formatMDW, nightsDays } from '../lib/dates';
 import { useNav } from '../lib/navigation';
 import { getSessionUser } from '../lib/session';
 import { peopleCount, Trip, useTrips } from '../lib/tripStore';
+import { useWorld } from '../lib/worldStore';
 
 /** Figma 홈의 "동행 미리보기" 예시 — 아직 등록한 동행이 없을 때 보여 주는 샘플 */
 const SAMPLE_COMPANIONS = [
@@ -23,7 +24,9 @@ export function Home() {
   const { showToast } = useAppState();
   const { trips, draft, startNewTrip, deleteTrip, discardDraft } = useTrips();
   const user = getSessionUser();
-  const name = user?.name ?? '여행자';
+  const { profile } = useWorld();
+  // 서버에 저장된 닉네임 (프로필을 받기 전에는 로그인 때 받은 닉네임)
+  const name = profile.nickname || user?.alias || '여행자';
   const [deleting, setDeleting] = useState<Trip | null>(null);
 
   const unsavedDraft = draft && !trips.some((t) => t.id === draft.id) ? draft : null;

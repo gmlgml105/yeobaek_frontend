@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { ScreenShell } from '../components/ScreenShell';
-import { BellButton, BottomNav } from '../components/TripParts';
+import { logout } from '../api/auth';
+import { useServerProfile } from '../lib/useServerProfile';
+import { BellButton, BottomNav, ConfirmDialog } from '../components/TripParts';
 import { Avatar } from '../components/WorldParts';
 import { bookOpen, chevronRight20, palette, pencil, settingsGear, shieldCheck, sliders } from '../components/icons';
 import { todayISO } from '../lib/dates';
@@ -33,9 +36,22 @@ export function useNotebookStats() {
 
 /** Mobile 20 Profile · 나의 수첩 */
 export function MyPage() {
-  const { push } = useNav();
+  const { push, reset } = useNav();
   const { trips } = useTrips();
   const { profile } = useWorld();
+  // 프로필 탭을 열 때마다 서버에 저장된 값을 다시 받아 온다
+  const { loading, error, reload } = useServerProfile();
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const doLogout = async () => {
+    setLoggingOut(true);
+    // 백엔드 토큰 쿠키 삭제 + localStorage(token, yeobaek.member) 정리
+    await logout();
+    setLoggingOut(false);
+    setConfirmLogout(false);
+    reset({ name: 'onboarding' });
+  };
   const stats = useNotebookStats();
   const today = todayISO().replace(/-/g, '.');
 
@@ -49,7 +65,16 @@ export function MyPage() {
       contentClassName="profile-content"
       bottomNav={<BottomNav active="profile" />}
     >
-      <section className="profile-head">
+      {error && (
+        <p className="profile-load-error" role="alert">
+          {error}{' '}
+          <button type="button" className="link-button" onClick={() => void reload()}>
+            다시 불러오기
+          </button>
+        </p>
+      )}
+
+      <section className="profile-head" aria-busy={loading || undefined}>
         <Avatar nickname={profile.nickname} avatar={profile.avatar} size={70} />
         <div>
           <h2>{profile.nickname}</h2>
@@ -151,6 +176,23 @@ export function MyPage() {
           </button>
         </nav>
       </section>
+
+      <button type="button" className="btn-logout" onClick={() => setConfirmLogout(true)}>
+        로그아웃
+      </button>
+
+      {confirmLogout && (
+        <ConfirmDialog
+          title="로그아웃할까요?"
+          message="다시 이용하려면 로그인해야 해요."
+          confirmLabel={loggingOut ? '로그아웃 중…' : '로그아웃'}
+          danger
+          onCancel={() => setConfirmLogout(false)}
+          onConfirm={() => {
+            if (!loggingOut) void doLogout();
+          }}
+        />
+      )}
     </ScreenShell>
   );
 }

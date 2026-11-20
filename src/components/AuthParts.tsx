@@ -3,7 +3,8 @@ import { useAppState } from '../lib/appState';
 import { circle, circleCheck, chevronRight, google, kakao, naver } from './icons';
 
 // ---------------------------------------------------------------------------
-// 소셜 로그인 — Figma 디자인 유지, OAuth는 아직 연결되지 않은 상태로 처리
+// 소셜 로그인 — 백엔드 Spring Security OAuth2 로 이동 (/oauth2/authorization/{provider})
+// 가입·로그인이 끝나면 백엔드가 /oauth/callback 으로 돌려보낸다 (OAuthCallback)
 // ---------------------------------------------------------------------------
 
 const PROVIDERS = [
@@ -13,7 +14,6 @@ const PROVIDERS = [
 ] as const;
 
 export function SocialLogin({ caption, mode }: { caption: string; mode: 'signup' | 'login' }) {
-  const { showToast } = useAppState();
   return (
     <section className="social" aria-label={caption}>
       <p className="social-caption">{caption}</p>
@@ -23,10 +23,11 @@ export function SocialLogin({ caption, mode }: { caption: string; mode: 'signup'
             <button
               type="button"
               className={`social-button social-${p.key}`}
-              aria-label={`${p.name}로 ${mode === 'signup' ? '시작하기' : '로그인'} (연결 필요)`}
-              onClick={() =>
-                showToast(`${p.name} 로그인은 아직 연결되지 않았어요. OAuth 설정이 필요해요.`, 'info')
-              }
+              aria-label={`${p.name}로 ${mode === 'signup' ? '시작하기' : '로그인'}`}
+              onClick={() => {
+                // vite.config.js 의 proxy 가 /oauth2 를 Spring Boot 로 넘긴다
+                window.location.href = `/oauth2/authorization/${p.key}`;
+              }}
             >
               <img src={p.icon} alt="" width={p.w} height={p.h} />
             </button>

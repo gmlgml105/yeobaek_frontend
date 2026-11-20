@@ -233,14 +233,14 @@ export const KEYWORD_OPTIONS = [
 
 function defaultWorld(): WorldData {
   return {
+    // 서버(GET /api/profile)에서 받기 전의 값. 서버 기본값(tbl_member_setting default)과 맞춘다
     profile: {
-      nickname: '파란여백',
-      intro: '서두르지 않고 오래 기억하는 여행',
+      nickname: '',
+      intro: '',
       avatar: 'initial',
-      // Figma Mobile 22(세부 설정)에서 선택된 칩
-      tastes: ['힐링', '카페', '쇼핑', '친구'],
-      keywords: ['여유로운', '조용한', '가벼운'],
-      privacy: { nickname: true, contact: false, autosave: true },
+      tastes: [],
+      keywords: [],
+      privacy: { nickname: true, contact: true, autosave: true },
       accent: 'sky',
     },
     prefs: DEFAULT_PREFS,

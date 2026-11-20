@@ -43,6 +43,19 @@ export async function login(method: ContactMethod, contact: string, password: st
   }
 }
 
+/** POST /api/auth/refresh — 리프레시 토큰 쿠키로 { accessToken, member } 를 받아 저장 (소셜 로그인 콜백) */
+export async function refreshSession(): Promise<LoginResult> {
+  try {
+    const { data } = await postData('/auth/refresh');
+    const { accessToken, member } = data as { accessToken: string; member: MemberResponse };
+    saveSession(accessToken, member);
+    return { ok: true, user: getSessionUser() as SessionUser };
+  } catch (error) {
+    const e = errorReason(error);
+    return { ok: false, reason: e.status === 401 ? 'invalid' : (e.reason as 'network' | 'error'), message: e.message };
+  }
+}
+
 /** POST /api/auth/logout (토큰 쿠키 삭제) + localStorage 정리. 서버 오류가 나도 화면은 로그아웃한다 */
 export async function logout(): Promise<void> {
   try {

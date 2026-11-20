@@ -18,7 +18,8 @@ export function Login({ route }: { route: Extract<Route, { name: 'login' }> }) {
   const [password, setPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  // 소셜 로그인 실패 등으로 들어온 경우 안내 문구를 먼저 보여 준다
+  const [failure, setFailure] = useState<string | null>(route.error ?? null);
   const [failCount, setFailCount] = useState(0);
 
   const contact = method === 'email' ? email : phone;

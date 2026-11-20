@@ -8,6 +8,7 @@ import type { CodePurpose } from '../api/auth';
  *  onboarding  Mobile 01B Onboarding
  *  signup      Mobile 02 Create Account
  *  login       Mobile 03 Login
+ *  oauthCallback 소셜 로그인 완료 후 토큰을 받아 오는 화면 (/oauth/callback)
  *  forgot      Mobile 04 Forgot Password
  *  checkInbox  Mobile 05 Check Email / Mobile 05.2 Check Message
  *  verify      Mobile 06 Verify Code (이메일 · 휴대폰 · 비밀번호 재설정)
@@ -35,7 +36,8 @@ export type Route =
   | { name: 'splash'; stay?: boolean }
   | { name: 'onboarding' }
   | { name: 'signup' }
-  | { name: 'login'; method?: ContactMethod; contact?: string; notice?: string }
+  | { name: 'login'; method?: ContactMethod; contact?: string; notice?: string; error?: string }
+  | { name: 'oauthCallback' }
   | { name: 'forgot' }
   | { name: 'checkInbox'; method: ContactMethod; contact: string }
   | { name: 'verify'; purpose: CodePurpose; method: ContactMethod; contact: string }

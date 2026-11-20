@@ -5585,3 +5585,33 @@ button.member-post:hover {
   outline-offset: 4px;
   border-radius: 12px;
 }
+
+/* Mobile 20 프로필: 맨 아래 로그아웃 (빨간 글씨 + 빨간 테두리) */
+.btn-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--button-height);
+  margin-top: 8px;
+  border: 1px solid var(--danger);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--danger);
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.btn-logout:hover {
+  background: var(--danger-bg);
+}
+
+.profile-load-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 13px;
+}
