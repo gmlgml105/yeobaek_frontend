@@ -5603,6 +5603,67 @@ button.member-post:hover {
   flex-shrink: 0;
 }
 
+
+/* AI 추천 진입 영역 - 중립 그레이 스타일 */
+.nearby-ai-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid #d5d7dc;
+  border-radius: 20px;
+  background: #eceef1;
+}
+
+.nearby-ai-entry-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nearby-ai-entry-icon {
+  color: #555b65;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.nearby-ai-entry-heading h2 {
+  margin: 0;
+  color: #34383f;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.nearby-ai-entry-description {
+  margin: 0;
+  color: #666b75;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.nearby-ai-entry-button {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 12px;
+  background: #555b65;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nearby-ai-entry-button:hover {
+  background: #424751;
+}
+
+.nearby-ai-entry-button:focus-visible {
+  outline: 2px solid #424751;
+  outline-offset: 3px;
+}
+
+
 .btn-logout:hover {
   background: var(--danger-bg);
 }
