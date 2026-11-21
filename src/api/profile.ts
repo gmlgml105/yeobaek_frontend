@@ -1,5 +1,5 @@
 /**
- * Spring Boot ProfileController(/api/profile) 호출 모음
+ * Spring Boot ProfileAPIController(/api/profile) 호출 모음
  *  - 서버 값 → 화면(worldStore Profile) 값으로 바꾸는 toLocalProfile 포함
  *  - 모든 수정 API 는 수정 후의 프로필 전체를 돌려준다
  */
@@ -7,16 +7,21 @@ import ajax from '../utils/ajax';
 import type { Profile } from '../lib/worldStore';
 import { errorReason } from './error';
 
-/** GET /api/profile 응답 (ProfileResponseDTO) */
-export interface ServerProfile {
+/**
+ * 백엔드 ProfileDTO 와 같은 모양 (요청 · 응답 공용)
+ *  - 응답: 모든 항목이 채워져 온다
+ *  - 요청: 아래 ProfileInfoRequest · ProfileSettingsRequest 에 있는 항목만 보낸다
+ *    (id · name · email · phone · avatarUrl 은 응답 전용이라 서버가 읽지 않는다)
+ */
+export interface ProfileDTO {
   id: number;
   name: string | null;
   email: string | null;
   phone: string | null;
-  alias: string | null;
-  bio: string | null;
   /** /api/files/{id}, 없으면 null */
   avatarUrl: string | null;
+  alias: string | null;
+  bio: string | null;
   preferences: string[];
   vibes: string[];
   aliasPublic: boolean;
@@ -26,19 +31,23 @@ export interface ServerProfile {
   themeColor: string | null;
 }
 
-export interface SettingsPatch {
-  preferences?: string[];
-  vibes?: string[];
-  aliasPublic?: boolean;
-  phonePublic?: boolean;
-  noteAutoSave?: boolean;
-  themeColor?: string;
-}
+/** PUT /api/profile 요청 — 닉네임 · 소개 */
+export type ProfileInfoRequest = { alias: string; bio: string };
 
-export type ProfileResult = { ok: true; profile: ServerProfile } | { ok: false; reason: string; message: string | null };
+/** PATCH /api/profile/settings 요청 — 보낸 항목만 바뀐다 */
+export type ProfileSettingsRequest = Partial<{
+  preferences: string[];
+  vibes: string[];
+  aliasPublic: boolean;
+  phonePublic: boolean;
+  noteAutoSave: boolean;
+  themeColor: string;
+}>;
+
+export type ProfileResult = { ok: true; profile: ProfileDTO } | { ok: false; reason: string; message: string | null };
 
 /** 서버 값 → worldStore Profile (화면이 쓰는 모양) */
-export function toLocalProfile(p: ServerProfile): Partial<Profile> {
+export function toLocalProfile(p: ProfileDTO): Partial<Profile> {
   return {
     nickname: p.alias ?? '',
     intro: p.bio ?? '',
@@ -53,7 +62,7 @@ export function toLocalProfile(p: ServerProfile): Partial<Profile> {
 async function call(request: () => Promise<{ data: unknown }>): Promise<ProfileResult> {
   try {
     const { data } = await request();
-    return { ok: true, profile: data as ServerProfile };
+    return { ok: true, profile: data as ProfileDTO };
   } catch (error) {
     const e = errorReason(error);
     return { ok: false, reason: e.reason, message: e.message };
@@ -66,13 +75,13 @@ export function fetchProfile(): Promise<ProfileResult> {
 }
 
 /** PUT /api/profile — 닉네임 · 소개 */
-export function saveProfileInfo(alias: string, bio: string): Promise<ProfileResult> {
-  return call(() => ajax.put('/profile', { alias, bio }));
+export function saveProfileInfo(request: ProfileInfoRequest): Promise<ProfileResult> {
+  return call(() => ajax.put('/profile', request));
 }
 
 /** PATCH /api/profile/settings — 보낸 항목만 바뀐다 */
-export function saveSettings(patch: SettingsPatch): Promise<ProfileResult> {
-  return call(() => ajax.patch('/profile/settings', patch));
+export function saveSettings(request: ProfileSettingsRequest): Promise<ProfileResult> {
+  return call(() => ajax.patch('/profile/settings', request));
 }
 
 /** POST /api/profile/avatar — 사진 파일(또는 data URL·이미지 주소를 바꾼 Blob) 업로드 */
