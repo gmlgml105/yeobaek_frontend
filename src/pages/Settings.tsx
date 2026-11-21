@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { saveSettings, SettingsPatch } from '../api/profile';
+import { saveSettings, ProfileSettingsRequest } from '../api/profile';
 import { ScreenShell } from '../components/ScreenShell';
 import { BellButton, BottomNav } from '../components/TripParts';
 import { ChoiceChips, Switch } from '../components/WorldParts';
@@ -23,7 +23,7 @@ export function Settings({ route }: { route: Extract<Route, { name: 'settings' }
    * 화면에 먼저 반영하고 서버에 저장한다 (PATCH /api/profile/settings).
    * 저장에 실패하면 이전 값으로 되돌리고 알려 준다.
    */
-  const persist = async (patch: SettingsPatch, next: Partial<Profile>, previous: Partial<Profile>) => {
+  const persist = async (patch: ProfileSettingsRequest, next: Partial<Profile>, previous: Partial<Profile>) => {
     updateProfile(next);
     const result = await saveSettings(patch);
     if (!result.ok) {
@@ -60,7 +60,7 @@ export function Settings({ route }: { route: Extract<Route, { name: 'settings' }
 
   const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   const setPrivacy = (patch: Partial<typeof profile.privacy>) => {
-    const server: SettingsPatch = {};
+    const server: ProfileSettingsRequest = {};
     if (patch.nickname !== undefined) server.aliasPublic = patch.nickname;
     if (patch.contact !== undefined) server.phonePublic = patch.contact;
     if (patch.autosave !== undefined) server.noteAutoSave = patch.autosave;
