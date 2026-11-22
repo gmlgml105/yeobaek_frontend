@@ -42,7 +42,7 @@ export function GatheringChat({ route }: { route: Extract<Route, { name: 'chat' 
   }, [messages.length]);
 
   if (!g || !joined) return null;
-  const me = world.profile.privacy.nickname ? world.profile.nickname : '여행자';
+  const me = world.profile.nickname;
   const autosave = world.profile.privacy.autosave;
 
   const submit = (e: FormEvent) => {
