@@ -4,12 +4,16 @@
  *  - 모든 수정 API 는 수정 후의 프로필 전체를 돌려준다
  */
 import ajax from '../utils/ajax';
+import { toVisibility, type Visibility } from '../components/ProfileInfo';
+import { getSessionUser } from '../lib/session';
 import type { Profile } from '../lib/worldStore';
 import { errorReason } from './error';
 
 /**
  * 백엔드 ProfileDTO 와 같은 모양 (요청 · 응답 공용)
- *  - 응답: 모든 항목이 채워져 온다
+ *  - 내 프로필 응답: 모든 항목이 채워져 온다
+ *  - 회원(타인) 프로필 응답: name · phone 은 나에게 공개된 경우만 오고 (아니면 visibility 가 private)
+ *    email · noteAutoSave · themeColor 는 null 이다
  *  - 요청: 아래 ProfileInfoRequest · ProfileSettingsRequest 에 있는 항목만 보낸다
  *    (id · name · email · phone · avatarUrl 은 응답 전용이라 서버가 읽지 않는다)
  */
@@ -24,9 +28,12 @@ export interface ProfileDTO {
   bio: string | null;
   preferences: string[];
   vibes: string[];
-  aliasPublic: boolean;
-  phonePublic: boolean;
-  noteAutoSave: boolean;
+  /** 실명 공개 범위 */
+  nameVisibility: Visibility;
+  /** 연락처 공개 범위 */
+  phoneVisibility: Visibility;
+  /** 회원 프로필에서는 null */
+  noteAutoSave: boolean | null;
   /** 팔레트 id 또는 #rrggbb */
   themeColor: string | null;
 }
@@ -38,8 +45,8 @@ export type ProfileInfoRequest = { alias: string; bio: string };
 export type ProfileSettingsRequest = Partial<{
   preferences: string[];
   vibes: string[];
-  aliasPublic: boolean;
-  phonePublic: boolean;
+  nameVisibility: Visibility;
+  phoneVisibility: Visibility;
   noteAutoSave: boolean;
   themeColor: string;
 }>;
@@ -50,11 +57,13 @@ export type ProfileResult = { ok: true; profile: ProfileDTO } | { ok: false; rea
 export function toLocalProfile(p: ProfileDTO): Partial<Profile> {
   return {
     nickname: p.alias ?? '',
+    realName: p.name ?? '',
+    phone: p.phone ?? '',
     intro: p.bio ?? '',
     avatar: p.avatarUrl ?? 'initial',
     tastes: p.preferences ?? [],
     keywords: p.vibes ?? [],
-    privacy: { nickname: p.aliasPublic, contact: p.phonePublic, autosave: p.noteAutoSave },
+    privacy: { name: toVisibility(p.nameVisibility), contact: toVisibility(p.phoneVisibility), autosave: p.noteAutoSave ?? true },
     accent: p.themeColor ?? undefined,
   };
 }
@@ -69,9 +78,19 @@ async function call(request: () => Promise<{ data: unknown }>): Promise<ProfileR
   }
 }
 
-/** GET /api/profile */
-export function fetchProfile(): Promise<ProfileResult> {
-  return call(() => ajax.get('/profile'));
+/**
+ * GET /api/profile/{memberId}
+ * 서버가 로그인한 회원과 비교해 본인이면 내 프로필, 타인이면 공개용 회원 프로필을 돌려준다
+ */
+export function fetchProfile(memberId: number): Promise<ProfileResult> {
+  return call(() => ajax.get(`/profile/${memberId}`));
+}
+
+/** 로그인한 내 프로필 (GET /api/profile/{내 id}) */
+export function fetchMyProfile(): Promise<ProfileResult> {
+  const me = getSessionUser();
+  if (!me) return Promise.resolve({ ok: false, reason: 'no_session', message: '로그인이 필요해요.' });
+  return fetchProfile(me.id);
 }
 
 /** PUT /api/profile — 닉네임 · 소개 */

@@ -2757,6 +2757,13 @@ button.chip {
   text-align: left;
 }
 
+/* 세부 설정: 공개 범위(비공개 · 친구만 · 공개) 고르기 줄 */
+.scope-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
 .switch-row:last-child {
   border-bottom: 0;
 }
@@ -5247,6 +5254,17 @@ button.rail-card:hover {
   color: var(--brand-700);
 }
 
+/* 회원 프로필 상단: 내 프로필(.profile-head)과 같은 정보 창, 연필 버튼 자리에 친구 신청 */
+.member-profile-head .member-friend {
+  margin-top: 22px;
+}
+.member-loading {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--brand-600);
+}
+
 .member-taste {
   display: flex;
   flex-direction: column;
@@ -5286,122 +5304,22 @@ button.rail-card:hover {
   color: var(--brand-600);
 }
 
-.member-posts {
-  display: flex;
-  flex-direction: column;
-  margin-top: 22px;
-}
-.member-posts-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 23px;
-  font-weight: 700;
-  line-height: 28px;
-  color: var(--brand-700);
-}
-.member-posts-lead {
-  margin-top: 16px;
-  font-size: 13px;
-  line-height: 16px;
-  color: var(--brand-600);
-}
-.member-post-group {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-top: 15px;
-}
-.member-post-group + .member-post-group {
-  margin-top: 22px;
-  gap: 14px;
-}
-.member-post-group h3 {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 18px;
-  color: var(--brand-600);
-}
-.member-post-group ul {
+/* 회원 프로필 모집글: 내 프로필 수첩(.notebook-*)과 같은 카드 · 빈 칸(.empty-day) */
+.member-notes {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  list-style: none;
+  margin-top: 26px;
 }
-.member-post {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 15px 15px 17px;
-  border: 1px solid var(--brand-300);
-  border-radius: 16px;
-  background: #ffffff;
-  text-align: left;
-  font: inherit;
+/* 사진 없는 모집글: 수첩의 여행지 자리와 같은 그라데이션 */
+.member-notes .destination-placeholder {
+  background: linear-gradient(135deg, var(--sky-200), var(--brand-700));
 }
-button.member-post {
-  cursor: pointer;
-}
-button.member-post:hover {
-  border-color: var(--brand-700);
-}
-.member-post.is-closed {
+.member-notes .notebook-card.is-closed {
   opacity: 0.6;
 }
-.member-post-photo {
-  width: 100%;
-  height: 120px;
-  border-radius: 10px;
-  object-fit: cover;
-  background: var(--mist-100);
-}
-.member-post-photo.is-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--brand-600);
-}
-.member-post-tags {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-}
-.member-status {
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 11px;
-  border-radius: 100px;
-  background: var(--mist-100);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--brand-700);
-}
-.member-status.is-open {
-  background: var(--select, var(--brand-700));
-  color: #ffffff;
-}
-.member-post-tags small {
-  font-size: 11px;
-  color: var(--brand-600);
-}
-.member-post-title {
-  margin-top: 13px;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 22px;
-  color: var(--brand-700);
-}
-.member-post-meta {
-  margin-top: 8px;
-  font-size: 12px;
-  line-height: 14px;
-  color: var(--brand-600);
-}
-.member-posts > .footnote {
-  margin-top: 16px;
+.member-notes > .footnote {
+  margin-top: 4px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -5614,4 +5532,115 @@ button.member-post:hover {
   background: var(--danger-bg);
   color: var(--danger);
   font-size: 13px;
+}
+
+/* ---------------------------------------------------------------------------
+   친구 (알림 시트 · 친구 목록 · 회원 프로필 버튼)
+   --------------------------------------------------------------------------- */
+.bell-button {
+  position: relative;
+}
+.bell-badge {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 100px;
+  background: #e5484d;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+.friends-content {
+  gap: 24px;
+}
+.friend-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.friend-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--brand-300);
+  border-radius: 16px;
+  background: #ffffff;
+}
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.friend-row + .friend-row {
+  border-top: 1px solid var(--brand-300);
+}
+.friend-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.friend-who > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.friend-who strong {
+  font-size: 14px;
+  color: var(--brand-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.friend-who small {
+  font-size: 11px;
+  color: var(--brand-600);
+}
+.friend-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+}
+.friend-action {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--brand-700);
+  border-radius: 100px;
+  background: #ffffff;
+  color: var(--brand-700);
+  font-size: 12px;
+  font-weight: 700;
+}
+.friend-action.is-primary {
+  background: var(--brand-700);
+  color: #ffffff;
+}
+.friend-action:disabled,
+.member-friend:disabled {
+  opacity: 0.5;
+}
+
+.friend-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 100px;
+  background: var(--mist-100);
+  color: var(--brand-700);
+  font-size: 12px;
+  font-weight: 700;
 }

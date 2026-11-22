@@ -6,6 +6,7 @@
  * ⚠️ 서버가 없어서 다른 여행자는 실제 사람이 아닌 Figma에 그려진 예시 참여자입니다.
  *    모임 참여·대화도 이 브라우저 안에서만 기록되고, 다른 사람에게 전달되지 않습니다.
  */
+import type { Visibility } from '../components/ProfileInfo';
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { addDays, ISODate } from './dates';
 import { DEFAULT_PREFS, NearbyPrefs } from './nearby';
@@ -22,7 +23,11 @@ export interface Profile {
   avatar: string;
   tastes: string[];
   keywords: string[];
-  privacy: { nickname: boolean; contact: boolean; autosave: boolean };
+  /** 실명 · 연락처 (서버 값, 공개 여부와 상관없이 본인 것) */
+  realName?: string;
+  phone?: string;
+  /** name: 실명 공개 범위 · contact: 연락처 공개 범위 · autosave: 수첩 대화 자동 저장 */
+  privacy: { name: Visibility; contact: Visibility; autosave: boolean };
   /** Mobile 22 컬러 조합 선택: 팔레트 id(lib/accent.ts) 또는 직접 고른 #rrggbb */
   accent?: string;
 }
@@ -83,8 +88,6 @@ interface WorldData {
   archiveDeleted: string[];
   /** Mobile 16 ✦ 버튼 — 여백 도우미(챗봇 데모) 대화 기록 */
   assistantLog: AssistantMessage[];
-  /** Mobile 20-1 친구 신청(테스트) — 이 기기에만 기록, 상대에게 전달되지 않음 */
-  friendRequests: string[];
 }
 
 export interface AssistantAction {
@@ -240,7 +243,7 @@ function defaultWorld(): WorldData {
       avatar: 'initial',
       tastes: [],
       keywords: [],
-      privacy: { nickname: true, contact: true, autosave: true },
+      privacy: { name: 'private', contact: 'private', autosave: true },
       accent: 'sky',
     },
     prefs: DEFAULT_PREFS,
@@ -251,7 +254,6 @@ function defaultWorld(): WorldData {
     chats: {},
     archiveDeleted: [],
     assistantLog: [],
-    friendRequests: [],
   };
 }
 
@@ -278,7 +280,6 @@ interface WorldApi extends WorldData {
   deleteArchive: (id: string) => void;
   addAssistant: (msgs: AssistantMessage[]) => void;
   clearAssistant: () => void;
-  toggleFriendRequest: (nickname: string) => boolean;
 }
 
 const WorldContext = createContext<WorldApi | null>(null);
@@ -375,18 +376,6 @@ export function WorldProvider({
     [],
   );
   const clearAssistant = useCallback(() => setData((d) => ({ ...d, assistantLog: [] })), []);
-  /** 신청 상태를 바꾸고, 바뀐 뒤 신청 중이면 true */
-  const toggleFriendRequest = useCallback(
-    (nickname: string) => {
-      const on = !data.friendRequests.includes(nickname);
-      setData((d) => ({
-        ...d,
-        friendRequests: on ? [...new Set([...d.friendRequests, nickname])] : d.friendRequests.filter((n) => n !== nickname),
-      }));
-      return on;
-    },
-    [data.friendRequests],
-  );
 
   const value = useMemo<WorldApi>(
     () => ({
@@ -408,9 +397,8 @@ export function WorldProvider({
       deleteArchive,
       addAssistant,
       clearAssistant,
-      toggleFriendRequest,
     }),
-    [data, gatherings, getGathering, isJoined, memberCount, messagesOf, updateProfile, setPrefs, dismissPlace, restorePlaces, setExpanded, join, leave, createGathering, sendMessage, deleteArchive, addAssistant, clearAssistant, toggleFriendRequest],
+    [data, gatherings, getGathering, isJoined, memberCount, messagesOf, updateProfile, setPrefs, dismissPlace, restorePlaces, setExpanded, join, leave, createGathering, sendMessage, deleteArchive, addAssistant, clearAssistant],
   );
 
   return <WorldContext.Provider value={value}>{children}</WorldContext.Provider>;

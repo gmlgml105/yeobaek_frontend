@@ -63,7 +63,7 @@ export function GatheringDetail({ route }: { route: Extract<Route, { name: 'gath
   const joined = world.isJoined(g.id);
   const count = world.memberCount(g);
   const full = !joined && count >= g.maxPeople;
-  const me = world.profile.privacy.nickname ? world.profile.nickname : '여행자';
+  const me = world.profile.nickname;
   const isDining = g.kind === 'dining';
   const photo = gatheringPhoto(g);
   const other = world.gatherings.find((x) => x.id !== g.id && x.kind !== g.kind);
